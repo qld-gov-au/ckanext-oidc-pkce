@@ -45,28 +45,25 @@ class IOidcPkce(Interface):
                 {"user": admin["name"]},
                 {"id": user.id, "include_plugin_extras": True},
             )
-            extras = user_dict.pop("plugin_extras", None) or {}
+            # Don't assemble a full user from OIDC as we don't need or want all of it
+            data = {
+                "fullname": user_dict.get("fullname", userinfo["name"]),
+                "plugin_extras": user_dict.get("plugin_extras", None) or {} | self.oidc_info_into_plugin_extras(userinfo)
+            }
 
-            data = self.oidc_info_into_user_dict(userinfo)
-            data["id"] = user.id
-            data.pop("name")
-            if user_dict.get("fullname", None):
-                data.pop("fullname")  # Don't override fullname if it is already populated
-
-            if not config.munge_password():
-                data.pop("password")
-
-            extras.update(data["plugin_extras"])
-            data["plugin_extras"] = extras
-
+            if config.munge_password():
+                data["password"] = self._generate_password()
             user_dict.update(data)
             user_dict.pop("name")  # Username is untouched, so exclude it from the update payload.
-            tk.get_action("user_update")({"user": admin["name"]}, user_dict)
+            tk.get_action("user_patch")({"user": admin["name"]}, user_dict)
 
             signals.user_sync.send(user.id)
             return user
 
         return self.create_oidc_user(userinfo)
+
+    def _generate_password(self):
+        return secrets.token_urlsafe(60) + "1A!a_"
 
     def oidc_info_into_plugin_extras(
         self, userinfo: dict[str, Any]
@@ -79,7 +76,7 @@ class IOidcPkce(Interface):
         data = {
             "email": userinfo["email"],
             "name": _get_random_username_from_email(userinfo["email"]),
-            "password": secrets.token_urlsafe(60) + "1A!a_",
+            "password": self._generate_password(),
             "fullname": userinfo["name"],
             "plugin_extras": self.oidc_info_into_plugin_extras(userinfo),
         }
