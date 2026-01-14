@@ -50,6 +50,8 @@ class IOidcPkce(Interface):
             data = self.oidc_info_into_user_dict(userinfo)
             data["id"] = user.id
             data.pop("name")
+            if user_dict.get("fullname", None):
+                data.pop("fullname")  # Don't override fullname if it is already populated
 
             if not config.munge_password():
                 data.pop("password")
@@ -59,8 +61,6 @@ class IOidcPkce(Interface):
 
             user_dict.update(data)
             user_dict.pop("name")  # Username is untouched, so exclude it from the update payload.
-            if user_dict.get("fullname", None):
-                data.pop("fullname")  # Don't override fullname if it is already populated
             tk.get_action("user_update")({"user": admin["name"]}, user_dict)
 
             signals.user_sync.send(user.id)
