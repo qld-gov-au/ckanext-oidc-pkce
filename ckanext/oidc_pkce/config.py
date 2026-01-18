@@ -137,7 +137,7 @@ def same_id() -> bool:
 
 
 def munge_password() -> bool:
-    """Override existing pasword for account with a random one, preventing
+    """Override existing password for account with a random one, preventing
     direct login.
 
     """
