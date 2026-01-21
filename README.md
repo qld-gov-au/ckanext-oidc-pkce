@@ -39,16 +39,16 @@ Compatibility with core CKAN versions:
 
 ```ini
 # URL of SSO application
-# Could be overriden at runtime with env var CKANEXT_OIDC_PKCE_BASE_URL
+# Could be overridden at runtime with env var CKANEXT_OIDC_PKCE_BASE_URL
 ckanext.oidc_pkce.base_url = https://12345.example.okta.com
 
 # ClientID of SSO application
-# Could be overriden at runtime with env var CKANEXT_OIDC_PKCE_CLIENT_ID
+# Could be overridden at runtime with env var CKANEXT_OIDC_PKCE_CLIENT_ID
 ckanext.oidc_pkce.client_id = clientid
 
 # ClientSecret of SSO application
 # (optional, only need id Client App defines a secret, default: "")
-# Could be overriden at runtime with env var CKANEXT_OIDC_PKCE_CLIENT_SECRET
+# Could be overridden at runtime with env var CKANEXT_OIDC_PKCE_CLIENT_SECRET
 ckanext.oidc_pkce.client_secret = clientsecret
 
 # Path to the authorization endpont inside SSO application
@@ -83,9 +83,11 @@ ckanext.oidc_pkce.scope = email
 ckanext.oidc_pkce.use_same_id = true
 
 # When connecting to an existing(non-sso) account, override user's password
-# so that it becomes impossible to login using CKAN authentication system.
+# so that it becomes impossible to log in using CKAN authentication system.
 # Enable this flag if you want to force SSO-logins for all users that once
 # used SSO-login.
+# Does not apply to sysadmins (as they need to know their passwords in order
+# to update user profiles).
 # (optional, default: false)
 ckanext.oidc_pkce.munge_password = true
 
