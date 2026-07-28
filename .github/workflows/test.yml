@@ -11,8 +11,8 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
         with:
           python-version: '3.x'
       - name: Install requirements
@@ -56,12 +56,8 @@ jobs:
       CKAN_REDIS_URL: redis://redis:6379/1
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         timeout-minutes: 1
-        continue-on-error: ${{ matrix.experimental }}
-
-      - if: ${{ matrix.ckan-version == 2.9 }}
-        run: pip install "setuptools>=44.1.0,<71"
         continue-on-error: ${{ matrix.experimental }}
 
       - name: Install requirements
@@ -85,7 +81,7 @@ jobs:
         continue-on-error: ${{ matrix.experimental }}
 
       - name: Test Summary
-        uses: test-summary/action@v2
+        uses: test-summary/action@v2.6
         continue-on-error: ${{ matrix.experimental }}
         with:
           paths: "/tmp/artifacts/junit/*.xml"
