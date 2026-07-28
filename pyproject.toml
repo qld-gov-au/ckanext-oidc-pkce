@@ -15,6 +15,7 @@ authors = [
 ]
 maintainers = [
     {name = "DataShades", email = "datashades@linkdigital.com.au"},
+    {name = "Queensland Online Development and Delivery", email = "qol.develoment@smartservice.qld.gov.au"},
 ]
 
 [project.readme]
