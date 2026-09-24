@@ -22,10 +22,15 @@ class IOidcPkce(Interface):
     def get_oidc_user(self, userinfo: dict[str, Any]) -> Optional[model.User]:
         q = model.Session.query(model.User)
 
+        if tk.check_ckan_version("2.12"):
+            # Handle 2.12+ where pending and deleted can be added to the list.
+            active_state_filter = model.User.state.in_(tk.config["ckan.user.unique_email_states"])
+        else:
+            active_state_filter = model.User.state == 'active'
+
         user = q.filter(
-            model.User.plugin_extras["oidc_pkce"]["sub"].astext
-            == userinfo["sub"],
-            model.User.state == 'active'
+            model.User.plugin_extras["oidc_pkce"]["sub"].astext == userinfo["sub"],
+            active_state_filter
         ).one_or_none()
 
         if user:
@@ -34,7 +39,7 @@ class IOidcPkce(Interface):
 
         users = q.filter(
             model.User.email.ilike(userinfo["email"]),
-            model.User.state == 'active'
+            active_state_filter
         ).all()
         if len(users) > 1:
             log.error("Unable to uniquely identify account, found %s matches for: %s",
