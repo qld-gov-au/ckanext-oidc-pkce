@@ -33,3 +33,18 @@ class TestSyncUser:
             attached = attached[0]
 
         assert user["id"] == attached.id
+
+    def test_sync_ignores_deleted_users(self, user_factory, user_info):
+        deleted_user = user_factory(
+            email=user_info["email"],
+            state="deleted",
+        )
+        active_user = user_factory(
+            email=user_info["email"],
+            state="active",
+        )
+
+        attached = utils.sync_user(user_info)
+
+        assert attached.id == active_user["id"]
+        assert attached.id != deleted_user["id"]
