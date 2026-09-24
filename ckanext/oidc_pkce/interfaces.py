@@ -24,7 +24,8 @@ class IOidcPkce(Interface):
 
         user = q.filter(
             model.User.plugin_extras["oidc_pkce"]["sub"].astext
-            == userinfo["sub"]
+            == userinfo["sub"],
+            model.User.state == 'active'
         ).one_or_none()
 
         if user:
@@ -32,7 +33,8 @@ class IOidcPkce(Interface):
             return user
 
         users = q.filter(
-            model.User.email.ilike(userinfo["email"])
+            model.User.email.ilike(userinfo["email"]),
+            model.User.state == 'active'
         ).all()
         if len(users) > 1:
             log.error("Unable to uniquely identify account, found %s matches for: %s",
