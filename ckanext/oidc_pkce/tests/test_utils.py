@@ -35,8 +35,8 @@ class TestSyncUser:
 
         assert user["id"] == attached.id
 
-    @pytest.mark.skipif(tk.check_ckan_version("2.12"), reason="This is for ckan 2.11 and before")
-    def test_2_11_sync_ignores_deleted_users(self, user_factory, user_info):
+    @pytest.mark.ckan_config("ckan.user.unique_email_states", ["active"])  # Needed to ensure compatibility in 2.12+
+    def test_sync_ignores_deleted_users(self, user_factory, user_info):
         deleted_user = user_factory(
             email=user_info["email"],
             state="deleted",
@@ -51,26 +51,7 @@ class TestSyncUser:
         assert attached.id == active_user["id"]
         assert attached.id != deleted_user["id"]
 
-    @pytest.mark.skipif(tk.check_ckan_version("2.12"), reason="This is for ckan 2.11 and before")
-    def test_2_11_sync_email_is_unique_with_active_reused_email(self, user_factory, user_info):
-        """Configuration to allow only active emails to be linked
-        """
-        deleted_user = user_factory(
-            email=user_info["email"],
-            state="deleted",
-        )
-        active_user = user_factory(
-            email=user_info["email"],
-            state="active",
-        )
-
-        attached = utils.sync_user(user_info)
-
-        assert attached.id == active_user["id"]
-        assert attached.id != deleted_user["id"]
-
-    @pytest.mark.skipif(not tk.check_ckan_version("2.12"), reason="This is for ckan 2.12+")
-    @pytest.mark.ckan_config("ckan.user.unique_email_states", ["active"])
+    @pytest.mark.ckan_config("ckan.user.unique_email_states", ["active"])  # Needed to ensure compatibility in 2.12+
     def test_2_12_sync_email_is_unique_with_no_active_email_found_new_user_created(self, user_factory, user_info):
         """Configuration to ignore deleted user and create new user account on SSO
         """
@@ -118,3 +99,62 @@ class TestSyncUser:
         attached = utils.sync_user(user_info)
 
         assert attached is None
+
+    @pytest.mark.ckan_config("ckan.user.unique_email_states", ["active"])
+    def test_get_oidc_user_matches_by_sub_with_changed_email(self, user_factory):
+        """Test to correctly finds a user using the 'sub' stored in plugin_extras, even if the email has changed.
+        """
+
+        user_info = {
+            "email": "original@abc.com",
+            "name": "Original User",
+            "sub": "111Sub"
+        }
+
+        # Manually create user to ensure plugin_extras is set correctly
+        user = user_factory(
+            email=user_info["email"],
+            plugin_extras={"oidc_pkce": {"sub": user_info["sub"]}}
+        )
+        # user.plugin_extras = {"oidc_pkce": {"sub": user_info["sub"]}}
+        # model.Session.instance().add(user)
+        # model.Session.instance().commit()
+
+        # This simulates a user changing their email in the Identity Provider or on site
+        new_user_info = {
+            "sub": "111Sub",
+            "email": "new_email@abcefg.com",
+            "name": "New Email User",
+        }
+
+        matched_user = utils.sync_user(new_user_info)
+
+        assert matched_user is not None
+        assert matched_user.id == user.id
+        assert matched_user.email == user_info["email"]
+
+    def test_get_oidc_user_ignores_inactive_users_for_sub(self, user_factory):
+        """verify a user with a matching 'sub' but 'deleted' state is NOT returned
+        """
+        sub_value = "deleted_sub_999"
+
+        # Create a deleted user with the matching sub
+        deleted_user = user_factory(
+            email="deleted@abc.com",
+            state="deleted",
+            plugin_extras={"oidc_pkce": {"sub": sub_value}}
+        )
+        # deleted_user.plugin_extras = {"oidc_pkce": {"sub": sub_value}}
+        # model.Session.instance().add(deleted_user)
+        # model.Session.instance().commit()
+
+        user_info = {
+            "sub": sub_value,
+            "email": "deleted@abc.com",
+            "name": "Deleted User",
+        }
+
+        matched_user = utils.sync_user(user_info)
+
+        assert matched_user is not None
+        assert matched_user.id != deleted_user["id"]

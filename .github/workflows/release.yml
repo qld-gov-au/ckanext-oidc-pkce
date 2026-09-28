@@ -25,14 +25,13 @@ jobs:
         config: cliff.toml
         args: --verbose --latest
       env:
-        OUTPUT: CHANGELOG.md
+        OUTPUT: CHANGELOG_LATEST.md
         GITHUB_REPO: ${{ github.repository }}
 
     - name: Build Changelog URL and create release
       run: |
         TAG_NAME=${{ github.ref_name }}
-        NOTES="${{ steps.git-cliff.outputs.changelog }}"
-        gh release create "$TAG_NAME" --verify-tag --title "$TAG_NAME" --notes "$NOTES"
+        gh release create "$TAG_NAME" --verify-tag --title "$TAG_NAME" --notes-file CHANGELOG_LATEST.md
 
 
     - name: Generate full changelog
